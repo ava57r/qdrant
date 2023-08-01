@@ -6,6 +6,7 @@ use quantization::{EncodedVectors, EncodedVectorsPQ, EncodedVectorsU8};
 use serde::{Deserialize, Serialize};
 
 use super::quantized_raw_scorer::QuantizedRawScorer;
+use crate::common::error_logging::LogError;
 use crate::common::file_operations::{atomic_save_json, read_json};
 use crate::data_types::vectors::VectorElementType;
 use crate::entry::entry_point::OperationResult;
@@ -97,10 +98,10 @@ impl QuantizedVectors {
         let data_path = path.join(QUANTIZED_DATA_PATH);
         let meta_path = path.join(QUANTIZED_META_PATH);
         match &self.storage_impl {
-            QuantizedVectorStorage::ScalarRam(storage) => storage.save(&data_path, &meta_path)?,
-            QuantizedVectorStorage::ScalarMmap(storage) => storage.save(&data_path, &meta_path)?,
-            QuantizedVectorStorage::PQRam(storage) => storage.save(&data_path, &meta_path)?,
-            QuantizedVectorStorage::PQMmap(storage) => storage.save(&data_path, &meta_path)?,
+            QuantizedVectorStorage::ScalarRam(storage) => storage.save(&data_path, &meta_path).describe("Saving ScalarRam")?,
+            QuantizedVectorStorage::ScalarMmap(storage) => storage.save(&data_path, &meta_path).describe("Saving ScalarMmap")?,
+            QuantizedVectorStorage::PQRam(storage) => storage.save(&data_path, &meta_path).describe("Saving PQRam")?,
+            QuantizedVectorStorage::PQMmap(storage) => storage.save(&data_path, &meta_path).describe("Saving PQMmap")?,
         };
         Ok(())
     }
@@ -191,14 +192,14 @@ impl QuantizedVectors {
                         &data_path,
                         &meta_path,
                         &config.vector_parameters,
-                    )?)
+                    ).describe("Loading ScalarRam from file")?)
                 } else {
                     QuantizedVectorStorage::ScalarMmap(
                         EncodedVectorsU8::<QuantizedMmapStorage>::load(
                             &data_path,
                             &meta_path,
                             &config.vector_parameters,
-                        )?,
+                        ).describe("Loading ScalarMmap from file")?,
                     )
                 }
             }
@@ -208,13 +209,13 @@ impl QuantizedVectors {
                         &data_path,
                         &meta_path,
                         &config.vector_parameters,
-                    )?)
+                    ).describe("Loading PQRam from file")?)
                 } else {
                     QuantizedVectorStorage::PQMmap(EncodedVectorsPQ::<QuantizedMmapStorage>::load(
                         &data_path,
                         &meta_path,
                         &config.vector_parameters,
-                    )?)
+                    ).describe("Loading PQMmap from file")?)
                 }
             }
         };
@@ -254,7 +255,7 @@ impl QuantizedVectors {
                 mmap_data_path.as_path(),
                 vector_parameters.count,
                 quantized_vector_size,
-            )?;
+            ).describe("Creating QuantizedMmapStorageBuilder for Scalar")?;
             Ok(QuantizedVectorStorage::ScalarMmap(
                 EncodedVectorsU8::encode(
                     vectors,
@@ -300,7 +301,7 @@ impl QuantizedVectors {
                 mmap_data_path.as_path(),
                 vector_parameters.count,
                 quantized_vector_size,
-            )?;
+            ).describe("Creating QuantizedMmapStorageBuilder for PQ")?;
             Ok(QuantizedVectorStorage::PQMmap(EncodedVectorsPQ::encode(
                 vectors,
                 storage_builder,

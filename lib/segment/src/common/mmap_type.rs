@@ -31,6 +31,8 @@ use memmap2::MmapMut;
 
 use crate::common::Flusher;
 
+use super::error_logging::LogError;
+
 /// Result for mmap errors.
 type Result<T> = std::result::Result<T, Error>;
 
@@ -175,7 +177,7 @@ where
         Box::new({
             let mmap = self.mmap.clone();
             move || {
-                mmap.flush()?;
+                mmap.flush().describe("Memmap flusher is running")?;
                 Ok(())
             }
         })

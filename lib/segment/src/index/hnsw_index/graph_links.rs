@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use memmap2::{Mmap, MmapMut};
 
+use crate::common::error_logging::LogError;
 use crate::common::mmap_ops;
 use crate::entry::entry_point::{OperationError, OperationResult};
 use crate::madvise;
@@ -277,11 +278,11 @@ impl GraphLinksConverter {
 
             file.set_len(self.data_size())?;
             let m = unsafe { MmapMut::map_mut(&file) };
-            let mut mmap = m?;
+            let mut mmap = m.describe("GraphLinksConverter are saving data as memmap")?;
 
             self.serialize_to(&mut mmap);
 
-            mmap.flush()?;
+            mmap.flush().describe("GraphLinksConverter are saving data as memmap")?;
         }
         std::fs::rename(temp_path, path)?;
 
@@ -437,7 +438,7 @@ impl GraphLinks for GraphLinksRam {
             .create(false)
             .open(path)?;
 
-        let mmap = unsafe { Mmap::map(&file)? };
+        let mmap = unsafe { Mmap::map(&file).describe("GraphLinksRam are loading data form memmap")? };
 
         Self::load_from_memory(&mmap)
     }
@@ -526,8 +527,8 @@ impl GraphLinks for GraphLinksMmap {
             .create(false)
             .open(path)?;
 
-        let mmap = unsafe { Mmap::map(&file)? };
-        madvise::madvise(&mmap, madvise::get_global())?;
+        let mmap = unsafe { Mmap::map(&file).describe("GraphLinksMmap is mapping a file")? };
+        madvise::madvise(&mmap, madvise::get_global()).describe("GraphLinksMmap is getting memory")?;
 
         let header = GraphLinksFileHeader::deserialize_bytes_from(&mmap);
         let level_offsets = get_level_offsets(&mmap, &header).to_vec();

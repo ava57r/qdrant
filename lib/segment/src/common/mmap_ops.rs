@@ -11,6 +11,8 @@ use crate::entry::entry_point::OperationResult;
 use crate::madvise;
 use crate::madvise::Madviseable;
 
+use super::error_logging::LogError;
+
 pub fn create_and_ensure_length(path: &Path, length: usize) -> OperationResult<()> {
     let file = OpenOptions::new()
         .read(true)
@@ -31,7 +33,7 @@ pub fn open_read_mmap(path: &Path) -> OperationResult<Mmap> {
         .open(path)?;
 
     let mmap = unsafe { Mmap::map(&file)? };
-    madvise::madvise(&mmap, madvise::get_global())?;
+    madvise::madvise(&mmap, madvise::get_global()).describe("Opening memmap on read mode")?;
 
     Ok(mmap)
 }
@@ -44,7 +46,7 @@ pub fn open_write_mmap(path: &Path) -> OperationResult<MmapMut> {
         .open(path)?;
 
     let mmap = unsafe { MmapMut::map_mut(&file)? };
-    madvise::madvise(&mmap, madvise::get_global())?;
+    madvise::madvise(&mmap, madvise::get_global()).describe("Opening memmap on write mode")?;
 
     Ok(mmap)
 }

@@ -3,6 +3,7 @@ use std::os::fd::AsRawFd;
 
 use io_uring::{opcode, types, IoUring};
 
+use crate::common::error_logging::LogError;
 use crate::common::mmap_ops::transmute_from_u8_to_slice;
 use crate::data_types::vectors::VectorElementType;
 use crate::entry::entry_point::{OperationError, OperationResult};
@@ -58,7 +59,7 @@ pub struct UringReader {
 impl UringReader {
     pub fn new(file: File, raw_size: usize, header_size: usize) -> OperationResult<Self> {
         let buffers = BufferStore::new(DISK_PARALLELISM, raw_size);
-        let io_uring = IoUring::new(DISK_PARALLELISM as _)?;
+        let io_uring = IoUring::new(DISK_PARALLELISM as _).describe("Creating UringReader")?;
 
         Ok(Self {
             file,
@@ -81,7 +82,7 @@ impl UringReader {
             // Use existing `IoUring` if there's one...
             Some(io_uring) => io_uring,
             // ...or create a new one if not
-            None => IoUring::new(DISK_PARALLELISM as _)?,
+            None => IoUring::new(DISK_PARALLELISM as _).describe("UringReader: Reading stream")?,
         };
 
         let buffers_count = self.buffers.buffers.len();
