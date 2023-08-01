@@ -7,11 +7,10 @@ use std::{mem, ops, time};
 
 use memmap2::{Mmap, MmapMut};
 
+use super::error_logging::LogError;
 use crate::entry::entry_point::OperationResult;
 use crate::madvise;
 use crate::madvise::Madviseable;
-
-use super::error_logging::LogError;
 
 pub fn create_and_ensure_length(path: &Path, length: usize) -> OperationResult<()> {
     let file = OpenOptions::new()

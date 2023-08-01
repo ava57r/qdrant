@@ -29,9 +29,8 @@ use std::{mem, slice};
 use bitvec::slice::BitSlice;
 use memmap2::MmapMut;
 
-use crate::common::Flusher;
-
 use super::error_logging::LogError;
+use crate::common::Flusher;
 
 /// Result for mmap errors.
 type Result<T> = std::result::Result<T, Error>;
